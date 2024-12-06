@@ -2,7 +2,7 @@ const gamesboardContainer = document.querySelector("#gamesboard-container");
 const optionsContainer = document.querySelector(".options-container");
 const flipButton = document.querySelector("#flip-button");
 
-// options choosing
+/* --------------------------- options choosing --------------------------- */
 let angle = 0;
 function flipShips() {
   const optionShips = Array.from(optionsContainer.children);
@@ -14,7 +14,7 @@ function flipShips() {
 
 flipButton.addEventListener("click", flipShips);
 
-// creating game board
+/* --------------------------- creating game board --------------------------- */
 let width = 10;
 function createGameBoard(color, user) {
   const gameBoardContainer = document.createElement("div");
@@ -32,10 +32,10 @@ function createGameBoard(color, user) {
   gamesboardContainer.append(gameBoardContainer);
 }
 
-createGameBoard("red", "player");
-createGameBoard("blue", "computer");
+createGameBoard("black", "player");
+createGameBoard("black", "computer");
 
-// creating ships
+/* --------------------------- creating ships --------------------------- */
 class Ship {
   constructor(name, length) {
     this.name = name;
@@ -52,13 +52,7 @@ const carrier = new Ship("carrier", 5);
 const ships = [destroyer, submarine, cruiser, battleship, carrier];
 let shipDropped;
 
-function addShipPiece(user, ship, startId=null) {
-  const allBoardBlocks = document.querySelectorAll(`#${user} div`);
-  let isHorizontal = user === "player" ? angle === 0 : Math.random() > 0.5;
-  const randomStartIndex = Math.floor(Math.random() * width * width); // random starting index
-
-  let startIndex = startId ? startId : randomStartIndex;
-
+function handleValidity(ship, startIndex, isHorizontal, allBoardBlocks) {
   const shipLength = ship.length;
 
   let validStartIndex;
@@ -85,11 +79,26 @@ function addShipPiece(user, ship, startId=null) {
     }
   }
 
+  return shipBlocks;
+}
+
+function addShipPiece(user, ship, startId = null) {
+  const allBoardBlocks = document.querySelectorAll(`#${user} div`);
+  let isHorizontal = user === "player" ? angle === 0 : Math.random() > 0.5;
+  const randomStartIndex = Math.floor(Math.random() * width * width); // random starting index
+
+  let startIndex = startId ? startId : randomStartIndex;
+
+  const shipBlocks = handleValidity(
+    ship,
+    startIndex,
+    isHorizontal,
+    allBoardBlocks
+  );
+
   if (shipBlocks.some((block) => block.classList.contains("taken"))) {
-    if(user === 'computer')
-        return addShipPiece(user, ship);
-    else
-        shipDropped = false;
+    if (user === "computer") return addShipPiece(user, ship);
+    else shipDropped = false;
   }
 
   shipBlocks.forEach((shipBlock) => {
@@ -98,10 +107,9 @@ function addShipPiece(user, ship, startId=null) {
   });
 }
 
-ships.forEach((ship) => addShipPiece('computer', ship));
+ships.forEach((ship) => addShipPiece("computer", ship));
 
-
-// Drag and Drop ships
+/* --------------------------- Drag and Drop ships --------------------------- */
 const optionShips = Array.from(optionsContainer.children);
 const allPlayerBlocks = document.querySelectorAll("#player div");
 
@@ -123,11 +131,38 @@ function dragStart(e) {
 
 function dragOver(e) {
   e.preventDefault();
+  const ship = ships[draggedShip.id];
+  highlightArea(Number(e.target.id), ship);
 }
 
 function dropShip(e) {
   const startId = Number(e.target.id);
   const ship = ships[draggedShip.id];
-  addShipPiece('player', ship, startId);
+  addShipPiece("player", ship, startId);
   shipDropped && draggedShip.remove();
+}
+
+/* --------------------------- Add Highlight --------------------------- */
+function highlightArea(startIndex, ship) {
+  const allPlayerBlocks = document.querySelectorAll("#player div");
+  const isHorizontal = angle === 0;
+
+  const highlightedBlocks = handleValidity(
+    ship,
+    startIndex,
+    isHorizontal,
+    allPlayerBlocks
+  );
+
+  if (highlightedBlocks.some((block) => block.classList.contains("taken"))) {
+    shipDropped = false;
+    return;
+  }
+
+  highlightedBlocks.forEach((block) => {
+    block.classList.add("hover");
+    setTimeout(() => {
+      block.classList.remove("hover");
+    }, 500);
+  });
 }
